@@ -6,11 +6,31 @@
 	"version": "0.2.0",
 	"configurations": [
 		{
+			"name": "Run Extension (Isolated Profile)",
+			"type": "extensionHost",
+			"request": "launch",
+			"args": [
+				"--extensionDevelopmentPath=${workspaceFolder}",
+				"--user-data-dir=${workspaceFolder}/.vscode/dev-user-data",
+				"--disable-extensions",
+				"--profile",
+				"Git Worktree Debug"
+			],
+			"outFiles": [
+				"${workspaceFolder}/out/**/*.js"
+			],
+			"preLaunchTask": "${defaultBuildTask}"
+		},
+		{
 			"name": "Run Extension",
 			"type": "extensionHost",
 			"request": "launch",
 			"args": [
-				"--extensionDevelopmentPath=${workspaceFolder}"
+				"--extensionDevelopmentPath=${workspaceFolder}",
+				"--user-data-dir=${workspaceFolder}/.vscode/dev-user-data",
+				"--disable-extensions",
+				"--profile",
+				"Git Worktree Debug"
 			],
 			"outFiles": [
 				"${workspaceFolder}/out/**/*.js"

@@ -13,7 +13,7 @@ export namespace Config {
         workspaceFolder: null,
         workspace: null,
         global: null
-    }
+    };
 
     export interface Global {
         copyPaths: string[],
@@ -22,7 +22,7 @@ export namespace Config {
     export const DEFAULT_GLOBAL: Global = {
         copyPaths: ['.vscode'],
         worktreeDir: DEFAULT_WORKTREE_DIR
-    }
+    };
 
     interface Package {
         copyPaths: string[],
@@ -52,7 +52,7 @@ export namespace Config {
 
         if (global.workspaceValue !== undefined) {
             global.workspaceValue.copyPaths?.forEach((path: string) => {
-                if (result.copyPaths.indexOf(path) == -1) {
+                if (result.copyPaths.indexOf(path) === -1) {
                     result.copyPaths.push(path);
                 }
             });
@@ -62,7 +62,7 @@ export namespace Config {
         }
 
         if (global.globalValue !== undefined) {
-            if (result.copyPaths.length == 0) {
+            if (result.copyPaths.length === 0) {
                 global.globalValue.copyPaths?.forEach((path: string) => {
                     result.copyPaths.push(path);
                 });

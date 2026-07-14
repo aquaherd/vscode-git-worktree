@@ -18,20 +18,46 @@ async function getBuiltInGitApi(): Promise<GitAPI | undefined> {
 	return undefined;
 }
 
-const setupEvents = async (treeProvider: WorktreeProvider) => {
+const setupEvents = async (treeProvider: WorktreeProvider, context: vscode.ExtensionContext) => {
 
 	const builtinGit = await getBuiltInGitApi();
-	if (builtinGit) {
+	if (!builtinGit) {
+		return;
+	}
 
-		builtinGit.onDidChangeState((e) => {
-			builtinGit.repositories.forEach((repo) => {
-				repo.state.onDidChange((e) => {
+	const repoDisposables = new Map<string, vscode.Disposable>();
+
+	const registerRepoListeners = () => {
+		const activeRepoPaths = new Set<string>();
+
+		for (const repo of builtinGit.repositories) {
+			const repoPath = repo.rootUri.fsPath;
+			activeRepoPaths.add(repoPath);
+
+			if (!repoDisposables.has(repoPath)) {
+				const disposable = repo.state.onDidChange(() => {
 					treeProvider.refresh();
 				});
-			});
-		});
+				repoDisposables.set(repoPath, disposable);
+				context.subscriptions.push(disposable);
+			}
+		}
 
-	}
+		for (const [repoPath, disposable] of repoDisposables) {
+			if (!activeRepoPaths.has(repoPath)) {
+				disposable.dispose();
+				repoDisposables.delete(repoPath);
+			}
+		}
+	};
+
+	registerRepoListeners();
+	context.subscriptions.push(
+		builtinGit.onDidChangeState(() => {
+			registerRepoListeners();
+			treeProvider.refresh();
+		})
+	);
 };
 // this method is called when your extension is activated
 // your extension is activated the very first time the command is executed
@@ -39,10 +65,10 @@ export function activate(context: vscode.ExtensionContext) {
 
 	// Setup tree view
 	const worktreeProvider = new WorktreeProvider();
-	vscode.window.registerTreeDataProvider('worktreeDependencies', worktreeProvider);
+	context.subscriptions.push(vscode.window.registerTreeDataProvider('worktreeDependencies', worktreeProvider));
 
 	//set up git events to trigger worktree provider
-	setupEvents(worktreeProvider);
+	void setupEvents(worktreeProvider, context);
 
 	//open worktree command
 	const openWorktreeCommand = 'git-worktree-menu.open-worktree';
@@ -56,9 +82,9 @@ export function activate(context: vscode.ExtensionContext) {
 			path = selectedWT.path;
 		}
 		const uri = vscode.Uri.file(path);
-		await vscode.commands.executeCommand('vscode.openFolder', uri);
+		await vscode.commands.executeCommand('vscode.openFolder', uri, { forceReuseWindow: true });
 	};
-	vscode.commands.registerCommand(openWorktreeCommand, openWorktreeCommandHandler);
+	context.subscriptions.push(vscode.commands.registerCommand(openWorktreeCommand, openWorktreeCommandHandler));
 
 	//open worktree in new window
 	const openNewWindowWorktreeCommand = 'git-worktree-menu.openWorktreeNewWindow';
@@ -74,20 +100,20 @@ export function activate(context: vscode.ExtensionContext) {
 			path = selectedWT.path;
 		}
 		const uri = vscode.Uri.file(path);
-		await vscode.commands.executeCommand('vscode.openFolder', uri, true);
+		await vscode.commands.executeCommand('vscode.openFolder', uri, { forceNewWindow: true });
 	};
-	vscode.commands.registerCommand(openNewWindowWorktreeCommand, openNewWindowWorktreeCommandHandler);
+	context.subscriptions.push(vscode.commands.registerCommand(openNewWindowWorktreeCommand, openNewWindowWorktreeCommandHandler));
 
 	//refresh worktree list command linking
-	vscode.commands.registerCommand('git-worktree-menu.refreshList', () => worktreeProvider.refresh());
+	context.subscriptions.push(vscode.commands.registerCommand('git-worktree-menu.refreshList', () => worktreeProvider.refresh()));
 
 	//add worktree command linking
-	vscode.commands.registerCommand('git-worktree-menu.addWorktree', () => worktreeProvider.create());
+	context.subscriptions.push(vscode.commands.registerCommand('git-worktree-menu.addWorktree', () => worktreeProvider.create()));
 
 	//remove work tree command linking
-	vscode.commands.registerCommand('git-worktree-menu.removeWorktree', (args) => worktreeProvider.removeWorktree(args));
+	context.subscriptions.push(vscode.commands.registerCommand('git-worktree-menu.removeWorktree', (args) => worktreeProvider.removeWorktree(args)));
 	//force remove work tree command linking
-	vscode.commands.registerCommand('git-worktree-menu.forceRemoveWorktree', (args) => worktreeProvider.forceRemove(args));
+	context.subscriptions.push(vscode.commands.registerCommand('git-worktree-menu.forceRemoveWorktree', (args) => worktreeProvider.forceRemove(args)));
 
 }
 

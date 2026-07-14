@@ -51,7 +51,6 @@ export class WorktreeProvider implements vscode.TreeDataProvider<Worktree> {
     }
 
     async removeWorktree(args: any, force = false) {
-        console.log(args);
         const commands = [
             'worktree',
             'remove',
@@ -97,8 +96,9 @@ export class WorktreeProvider implements vscode.TreeDataProvider<Worktree> {
 
             if (pick?.id === 1) { return; }
 
-            if (defaultUri === undefined)
+            if (defaultUri === undefined) {
                 defaultUri = vscode.workspace.workspaceFolders ? vscode.workspace.workspaceFolders[0].uri : undefined;
+            }
 
             //select path
             let fileUri = await vscode.window.showOpenDialog({
